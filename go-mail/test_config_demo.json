@@ -1,0 +1,12 @@
+{
+    "senderAccount": "xx@xx.com",
+    "senderIdentity": "username",
+    "senderPassword": "password",
+    "host": "smtp.xx.com",
+    "serverAddr": "smtp.xx.com:587",
+    "msg": "测试 golang 发送邮件 消息体🐶",
+    "subject": "测试 golang 发送邮件 主题🙂",
+    "to": [
+        "xx@xx.com"
+    ]
+}
