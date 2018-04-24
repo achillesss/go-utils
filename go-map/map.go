@@ -50,7 +50,7 @@ func isMap(src interface{}) bool {
 	return reflect.TypeOf(src).Kind() == reflect.Map
 }
 
-// MapHandler handles map
+// Handler handles map
 func (gm GoMap) Handler() {
 	// mapValue := reflect.ValueOf(gm.instance)
 	mapType := reflect.TypeOf(gm.instance)
@@ -92,14 +92,12 @@ func (gm GoMap) Handler() {
 
 			kv := reflect.ValueOf(m)
 			v := mapValue.MapIndex(kv)
-			newV := reflect.New(valueType)
 
 			if !v.IsValid() {
-				newV.Elem().Set(reflect.Zero(valueType))
+				gm.queryRespChan <- map[interface{}]interface{}{m: reflect.Zero(valueType).Interface()}
 			} else {
-				newV.Elem().Set(v)
+				gm.queryRespChan <- map[interface{}]interface{}{m: v.Interface()}
 			}
-			gm.queryRespChan <- map[interface{}]interface{}{m: newV.Elem().Interface()}
 
 		// change to interface{}
 		case <-gm.interfaceChan:
