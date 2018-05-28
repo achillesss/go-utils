@@ -12,3 +12,7 @@
 
 # go-mail ignore
 go-mail/mail_test.json
+
+# vim
+*~
+*.swp

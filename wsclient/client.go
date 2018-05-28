@@ -3,7 +3,7 @@ package wsclient
 import (
 	"time"
 
-	"bitbucket.org/magmeng/go-utils/log"
+	"github.com/achillesss/go-utils/log"
 	"golang.org/x/net/websocket"
 )
 
