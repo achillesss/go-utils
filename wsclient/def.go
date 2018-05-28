@@ -21,4 +21,5 @@ type WsClient struct {
 	mustReconnect     bool
 	readErrorHandler  func(error)
 	writeErrorHandler func(error)
+	DebugOn           bool
 }

@@ -18,6 +18,8 @@ func TestClient(t *testing.T) {
 	server := "ws://118.25.40.163:8088"
 	origin := "http://118.25.40.163"
 	client := NewWsClient(server, origin, true, printError, printError)
+	client.DebugOn = true
+	client.Start()
 	go func() {
 		for {
 			msg := client.Receive()

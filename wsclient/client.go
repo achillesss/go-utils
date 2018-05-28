@@ -7,6 +7,11 @@ import (
 	"golang.org/x/net/websocket"
 )
 
+func (client *WsClient) debugLog(format string, args ...interface{}) {
+	if client.DebugOn {
+		log.Infofln(format, args...)
+	}
+}
 func (client *WsClient) renewStopSignal() {
 	sc := make(chan struct{})
 	if client.stopSignal == nil {
@@ -19,7 +24,7 @@ func (client *WsClient) renewStopSignal() {
 // Connect establish a new websocket connection
 // panic if any error occurs
 func (client *WsClient) connect() {
-	log.Infofln("start to connect")
+	client.debugLog("start to connetct")
 	config, err := websocket.NewConfig(client.server, client.origin)
 	if err != nil {
 		panic(err)
@@ -36,7 +41,7 @@ func (client *WsClient) connect() {
 
 	client.conn = conn
 	client.isRunning = true
-	log.Infofln("connected")
+	client.debugLog("connected")
 }
 
 // Close close the connection in WsClient
@@ -49,12 +54,12 @@ func (client *WsClient) Close() bool {
 }
 
 func (client *WsClient) stop() {
-	log.Infofln("stop")
+	client.debugLog("stop")
 	close(*client.stopSignal)
 	client.stopGroup.Wait()
 	client.isRunning = false
 	time.Sleep(time.Second)
-	log.Infofln("stopped")
+	client.debugLog("stopped")
 	client.renewStopSignal()
 	if client.mustReconnect {
 		client.stoppedSignal <- struct{}{}
@@ -63,7 +68,7 @@ func (client *WsClient) stop() {
 
 // 以下写法避免因读取消息时卡住而无法关闭连接
 func (client *WsClient) read() {
-	log.Infofln("start read")
+	client.debugLog("start read")
 	client.stopGroup.Add(1)
 	defer client.stopGroup.Done()
 	msgChan := make(chan string)
@@ -84,26 +89,26 @@ func (client *WsClient) read() {
 	for {
 		select {
 		case <-*client.stopSignal:
-			log.Infofln("read routine stop")
+			client.debugLog("read routine stop")
 			return
 		case msg := <-msgChan:
-			log.Infofln("reveice msg: %s", msg)
+			client.debugLog("reveice msg: %s", msg)
 			client.readChan <- []byte(msg)
 		}
 	}
 }
 
 func (client *WsClient) write() {
-	log.Infofln("start write")
+	client.debugLog("start write")
 	client.stopGroup.Add(1)
 	defer client.stopGroup.Done()
 	for {
 		select {
 		case <-*client.stopSignal:
-			log.Infofln("write routine stop")
+			client.debugLog("write routine stop")
 			return
 		case msg := <-client.writeChan:
-			log.Infofln("write msg: %s", msg)
+			client.debugLog("write msg: %s", msg)
 			err := websocket.Message.Send(client.conn, string(msg))
 			if err != nil && client.writeErrorHandler != nil {
 				client.writeErrorHandler(err)
@@ -124,23 +129,23 @@ func (client *WsClient) reconnect() {
 }
 
 func (client *WsClient) runMonitor() {
-	log.Infofln("run monitor")
+	client.debugLog("run monitor")
 
 	go func() {
 		for {
 			select {
 			case <-client.stoppedSignal:
-				log.Infofln("receive stopped signal")
+				client.debugLog("receive stopped signal")
 				go client.start()
 			case <-client.shutdownSignal:
-				log.Infofln("receive shutdown signal")
+				client.debugLog("receive shutdown signal")
 				client.stop()
 				client.Close()
 				return
 
 			// start read and send
 			case <-client.startSignal:
-				log.Infofln("receive start signal")
+				client.debugLog("receive start signal")
 				if client.isRunning {
 					continue
 				}
@@ -154,7 +159,6 @@ func (client *WsClient) runMonitor() {
 }
 
 func NewWsClient(server, origin string, mustReconnect bool, recvMsgErrHandler, sendMsgErrHandler func(error)) *WsClient {
-	log.Infofln("init new client")
 	var client WsClient
 	client.startSignal = make(chan struct{})
 	client.shutdownSignal = make(chan struct{})
@@ -168,10 +172,12 @@ func NewWsClient(server, origin string, mustReconnect bool, recvMsgErrHandler, s
 	client.mustReconnect = mustReconnect
 	client.renewStopSignal()
 
+	return &client
+}
+
+func (client *WsClient) Start() {
 	client.runMonitor()
 	client.start()
-	return &client
-
 }
 
 func (client *WsClient) Send(msg []byte) {
