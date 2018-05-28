@@ -51,7 +51,7 @@ func isMap(src interface{}) bool {
 }
 
 // Handler handles map
-func (gm GoMap) Handler() {
+func (gm *GoMap) Handler() {
 	// mapValue := reflect.ValueOf(gm.instance)
 	mapType := reflect.TypeOf(gm.instance)
 	mapValue := reflect.ValueOf(gm.instance)

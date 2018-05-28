@@ -149,6 +149,11 @@ func Warningfln(format string, arg ...interface{}) {
 	print(*warnOn || *infoOn, 1, logWarning, newline, format, arg...)
 }
 
+// WarningflnN prints information and create new line with a skip
+func WarningflnN(skip int, format string, arg ...interface{}) {
+	print(*warnOn || *infoOn, 1+skip, logWarning, newline, format, arg...)
+}
+
 // Errorf prints information inline
 func Errorf(format string, arg ...interface{}) {
 	print(*errOn || *warnOn || *infoOn, 1, logError, "", format, arg...)
@@ -157,4 +162,9 @@ func Errorf(format string, arg ...interface{}) {
 // Errorfln prints information and create new line
 func Errorfln(format string, arg ...interface{}) {
 	print(*errOn || *warnOn || *infoOn, 1, logError, newline, format, arg...)
+}
+
+// ErrorflnN prints information and create new line with a skip
+func ErrorflnN(skip int, format string, arg ...interface{}) {
+	print(*errOn || *warnOn || *infoOn, 1+skip, logError, newline, format, arg...)
 }
