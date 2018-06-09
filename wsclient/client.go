@@ -1,8 +1,7 @@
 package wsclient
 
 import (
-	"time"
-
+	"github.com/achillesss/go-utils/functionCaller"
 	"github.com/achillesss/go-utils/log"
 	"golang.org/x/net/websocket"
 )
@@ -58,7 +57,6 @@ func (client *WsClient) stop() {
 	close(*client.stopSignal)
 	client.stopGroup.Wait()
 	client.isRunning = false
-	time.Sleep(time.Second)
 	client.debugLog("stopped")
 	client.renewStopSignal()
 	if client.mustReconnect {
@@ -72,13 +70,14 @@ func (client *WsClient) read() {
 	client.stopGroup.Add(1)
 	defer client.stopGroup.Done()
 	msgChan := make(chan string)
-
 	go func() {
 		for {
 			var message string
 			err := websocket.Message.Receive(client.conn, &message)
-			if err != nil && client.readErrorHandler != nil {
-				client.readErrorHandler(err)
+			if err != nil {
+				if client.readErrorHandler != nil {
+					client.readErrorHandler(err)
+				}
 				client.stop()
 				return
 			}
@@ -107,11 +106,14 @@ func (client *WsClient) write() {
 		case <-*client.stopSignal:
 			client.debugLog("write routine stop")
 			return
+
 		case msg := <-client.writeChan:
 			client.debugLog("write msg: %s", msg)
 			err := websocket.Message.Send(client.conn, string(msg))
-			if err != nil && client.writeErrorHandler != nil {
-				client.writeErrorHandler(err)
+			if err != nil {
+				if client.writeErrorHandler != nil {
+					client.writeErrorHandler(err)
+				}
 				client.stop()
 			}
 		}
@@ -122,40 +124,49 @@ func (client *WsClient) start() {
 	client.startSignal <- struct{}{}
 }
 
-func (client *WsClient) reconnect() {
-	client.stop()
-	client.Close()
-	client.start()
-}
-
 func (client *WsClient) runMonitor() {
 	client.debugLog("run monitor")
-
 	go func() {
 		for {
 			select {
 			case <-client.stoppedSignal:
 				client.debugLog("receive stopped signal")
 				go client.start()
+
 			case <-client.shutdownSignal:
 				client.debugLog("receive shutdown signal")
 				client.stop()
 				client.Close()
 				return
 
-			// start read and send
+				// start read and send
 			case <-client.startSignal:
 				client.debugLog("receive start signal")
 				if client.isRunning {
 					continue
 				}
 				client.connect()
+				if client.connectingCount > 0 {
+					client.connectingCompletedSignal <- struct{}{}
+				}
 				go client.read()
 				go client.write()
+				client.connectingCount++
 			}
 		}
 	}()
+}
 
+var onConnectingCaller *funcaller.FunctionCaller
+
+func SetOnReconnectingFunction(function interface{}, params ...interface{}) {
+	onConnectingCaller = funcaller.NewCaller(function, params...)
+}
+
+func (client *WsClient) onReconnecting() {
+	for range client.connectingCompletedSignal {
+		onConnectingCaller.Call(false)
+	}
 }
 
 func NewWsClient(server, origin string, mustReconnect bool, recvMsgErrHandler, sendMsgErrHandler func(error)) *WsClient {
@@ -165,6 +176,7 @@ func NewWsClient(server, origin string, mustReconnect bool, recvMsgErrHandler, s
 	client.stoppedSignal = make(chan struct{})
 	client.readChan = make(chan []byte)
 	client.writeChan = make(chan []byte)
+	client.connectingCompletedSignal = make(chan struct{}, 1)
 	client.server = server
 	client.origin = origin
 	client.readErrorHandler = recvMsgErrHandler
@@ -176,6 +188,7 @@ func NewWsClient(server, origin string, mustReconnect bool, recvMsgErrHandler, s
 }
 
 func (client *WsClient) Start() {
+	go client.onReconnecting()
 	client.runMonitor()
 	client.start()
 }
@@ -186,4 +199,10 @@ func (client *WsClient) Send(msg []byte) {
 
 func (client *WsClient) Receive() []byte {
 	return <-client.readChan
+}
+
+func (client *WsClient) Reconnect() {
+	client.stop()
+	client.Close()
+	client.start()
 }
