@@ -23,7 +23,7 @@ func (client *WsClient) renewStopSignal() {
 // Connect establish a new websocket connection
 // panic if any error occurs
 func (client *WsClient) connect() {
-	client.debugLog("start to connetct")
+	client.debugLog("start to connect")
 	config, err := websocket.NewConfig(client.server, client.origin)
 	if err != nil {
 		panic(err)
