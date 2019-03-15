@@ -3,7 +3,7 @@ package wsserver
 import (
 	"fmt"
 
-	gomap "bitbucket.org/magmeng/go-utils/go-map"
+	"github.com/achillesss/go-utils/go-map"
 	"github.com/achillesss/go-utils/log"
 )
 
@@ -111,7 +111,6 @@ func (server *WsServer) NewRoom() {
 	r.broadcastChan = make(chan []byte)
 	r.msgReceiveChan = make(chan map[int][]byte)
 	r.roomates = gomap.NewMap(make(roomatesMap))
-	go r.roomates.Handler()
 	server.rooms.Add(r.id, &r)
 	log.Infofln("add new room %d", r.id)
 }

@@ -22,7 +22,7 @@ func (s *socket) stop() {
 	}
 }
 
-func (s *socket) receive(msgHandler func([]byte), errorHandler func(error)) {
+func (s *socket) receive(msgHandler func(int, []byte), errorHandler func(error)) {
 	log.Infofln("start receive")
 	msgChan := make(chan []byte)
 	go func() {
@@ -49,7 +49,7 @@ func (s *socket) receive(msgHandler func([]byte), errorHandler func(error)) {
 			return
 		case msg := <-msgChan:
 			if msgHandler != nil {
-				msgHandler(msg)
+				msgHandler(s.id, msg)
 			}
 		}
 	}

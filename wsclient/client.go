@@ -28,7 +28,6 @@ func (client *WsClient) connect() {
 	if err != nil {
 		panic(err)
 	}
-
 	conn, err := websocket.DialConfig(config)
 	if err != nil {
 		panic(err)

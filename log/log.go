@@ -57,10 +57,14 @@ func formatErr(skip int, pkgName bool, err *error) error {
 	return newLogAgent().setSkip(skip + 1).setSymble(pkgName).formatErr(err)
 }
 
-func print(ok bool, skip int, printType, end string, format string, arg ...interface{}) {
+func print_(ok bool, skip int, printType, end string, format string, arg ...interface{}) {
 	if ok {
-		newLogAgent().setSkip(skip+1).setPrintType(printType).setEnd(end).print(format, arg...)
+		newLogAgent().setSkip(skip+2).setPrintType(printType).setEnd(end).print(format, arg...)
 	}
+}
+
+func format(skip int, printType, end string, fmt string, arg ...interface{}) string {
+	return newLogAgent().setSkip(skip+1).setPrintType(printType).setEnd(end).String(fmt, arg...)
 }
 
 func funcName(skip int, on bool) string {
@@ -116,55 +120,67 @@ func FmtErrNP(skip int, err *error) error {
 
 // L logs a description when a function response is not ok
 func L(ok bool, format string, arg ...interface{}) {
-	print(ok, 1, logLog, "", format, arg...)
+	print_(ok, 1, logLog, "", format, arg...)
 }
 
 // Lln differs from L in that it create a newline after loging
 func Lln(ok bool, format string, arg ...interface{}) {
-	print(ok, 1, logLog, newline, format, arg...)
+	print_(ok, 1, logLog, newline, format, arg...)
 }
 
 // Infof prints information inline
 func Infof(format string, arg ...interface{}) {
-	print(*infoOn, 1, "", "", format, arg...)
+	print_(*infoOn, 1, "", "", format, arg...)
 }
 
 // Infofln prints information and create new line
 func Infofln(format string, arg ...interface{}) {
-	print(*infoOn, 1, "", newline, format, arg...)
+	print_(*infoOn, 1, "", newline, format, arg...)
 }
 
 // InfoflnN prints information and create new line with a skip
 func InfoflnN(skip int, format string, arg ...interface{}) {
-	print(*infoOn, 1+skip, "", newline, format, arg...)
+	print_(*infoOn, 1+skip, "", newline, format, arg...)
 }
 
 // Warningf prints information inline
 func Warningf(format string, arg ...interface{}) {
-	print(*warnOn || *infoOn, 1, logWarning, "", format, arg...)
+	print_(*warnOn || *infoOn, 1, logWarning, "", format, arg...)
 }
 
 // Warningfln prints information and create new line
 func Warningfln(format string, arg ...interface{}) {
-	print(*warnOn || *infoOn, 1, logWarning, newline, format, arg...)
+	print_(*warnOn || *infoOn, 1, logWarning, newline, format, arg...)
 }
 
 // WarningflnN prints information and create new line with a skip
 func WarningflnN(skip int, format string, arg ...interface{}) {
-	print(*warnOn || *infoOn, 1+skip, logWarning, newline, format, arg...)
+	print_(*warnOn || *infoOn, 1+skip, logWarning, newline, format, arg...)
 }
 
 // Errorf prints information inline
 func Errorf(format string, arg ...interface{}) {
-	print(*errOn || *warnOn || *infoOn, 1, logError, "", format, arg...)
+	print_(*errOn || *warnOn || *infoOn, 1, logError, "", format, arg...)
 }
 
 // Errorfln prints information and create new line
 func Errorfln(format string, arg ...interface{}) {
-	print(*errOn || *warnOn || *infoOn, 1, logError, newline, format, arg...)
+	print_(*errOn || *warnOn || *infoOn, 1, logError, newline, format, arg...)
 }
 
 // ErrorflnN prints information and create new line with a skip
 func ErrorflnN(skip int, format string, arg ...interface{}) {
-	print(*errOn || *warnOn || *infoOn, 1+skip, logError, newline, format, arg...)
+	print_(*errOn || *warnOn || *infoOn, 1+skip, logError, newline, format, arg...)
+}
+
+func FormatInfofln(fmt string, args ...interface{}) string {
+	return format(1, "", newline, fmt, args...)
+}
+
+func FormatWarningfln(fmt string, args ...interface{}) string {
+	return format(1, logWarning, newline, fmt, args...)
+}
+
+func FormatErrorfln(fmt string, args ...interface{}) string {
+	return format(1, logError, newline, fmt, args...)
 }

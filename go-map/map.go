@@ -43,6 +43,7 @@ func NewMap(srcMap interface{}) *GoMap {
 	m.lengthChan = make(chan int)
 	m.checkLengthChan = make(chan struct{})
 	m.dropChan = make(chan struct{})
+	go m.handle()
 	return &m
 }
 
@@ -51,8 +52,7 @@ func isMap(src interface{}) bool {
 }
 
 // Handler handles map
-func (gm *GoMap) Handler() {
-	// mapValue := reflect.ValueOf(gm.instance)
+func (gm *GoMap) handle() {
 	mapType := reflect.TypeOf(gm.instance)
 	mapValue := reflect.ValueOf(gm.instance)
 	if mapValue.IsNil() {
@@ -85,19 +85,20 @@ func (gm *GoMap) Handler() {
 		// query
 		case m := <-gm.queryChan:
 			kt := reflect.TypeOf(m)
+			result := reflect.Zero(valueType).Interface()
 			if kt.Kind() != keysType.Kind() {
-				gm.queryRespChan <- nil
+				gm.queryRespChan <- map[interface{}]interface{}{m: result}
 				continue
 			}
 
 			kv := reflect.ValueOf(m)
 			v := mapValue.MapIndex(kv)
 
-			if !v.IsValid() {
-				gm.queryRespChan <- map[interface{}]interface{}{m: reflect.Zero(valueType).Interface()}
-			} else {
-				gm.queryRespChan <- map[interface{}]interface{}{m: v.Interface()}
+			if v.IsValid() {
+				result = v.Interface()
 			}
+
+			gm.queryRespChan <- map[interface{}]interface{}{m: result}
 
 		// change to interface{}
 		case <-gm.interfaceChan:

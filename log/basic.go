@@ -61,7 +61,7 @@ func (a *logAgent) funcName() string {
 
 }
 
-func (a *logAgent) print(format string, arg ...interface{}) {
+func (a *logAgent) String(format string, arg ...interface{}) string {
 	if _, file, line, ok := runtime.Caller(a.skip + 1); ok {
 		fileName := strings.Split(file, slash)
 		timeTag := ""
@@ -117,7 +117,15 @@ func (a *logAgent) print(format string, arg ...interface{}) {
 			printer.Show(but.SET_BOLD)
 		}
 
-		printer.Print()
+		return printer.String()
+	}
+	return ""
+}
+
+func (a *logAgent) print(format string, arg ...interface{}) {
+	str := a.String(format, arg...)
+	if str != "" {
+		print(str)
 	}
 }
 

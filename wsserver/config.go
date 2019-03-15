@@ -55,10 +55,7 @@ func (h wsHandler) serve() {
 }
 
 type wsServerConfig struct {
-	handlers         []*wsHandler
-	recvErrorHandler func(error)
-	recvMsgHandler   func([]byte)
-	sendErrorHandler func(error)
+	handlers []*wsHandler
 }
 
 func newWsHandler() *wsHandler {
@@ -74,18 +71,6 @@ func (c *wsServerConfig) AddHandler(addr net.Addr, routers ...wsRouter) {
 		h.registerRouter(r.pattern, r.handler)
 	}
 	c.handlers = append(c.handlers, h)
-}
-
-func (c *wsServerConfig) SetSendErrorHandler(f func(error)) {
-	c.sendErrorHandler = f
-}
-
-func (c *wsServerConfig) SetReceiveErrorHandler(f func(error)) {
-	c.recvErrorHandler = f
-}
-
-func (c *wsServerConfig) SetReceiveMsgHandler(f func([]byte)) {
-	c.recvMsgHandler = f
 }
 
 func NewEmptyConfig() *wsServerConfig {

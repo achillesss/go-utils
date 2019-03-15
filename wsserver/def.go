@@ -10,7 +10,7 @@ type WsServer struct {
 	rooms               *gomap.GoMap
 	lastConnID          *int
 	lastRoomID          *int
-	receiveMsgHandler   func([]byte)
+	receiveMsgHandler   func(int, []byte)
 	receiveErrorHandler func(error)
 	sendErrorHandler    func(error)
 	ShouldAnswerPing    bool // hot switch

@@ -15,8 +15,10 @@ func printError(err error) {
 
 func TestClient(t *testing.T) {
 	flag.Parse()
-	server := "ws://118.25.40.163:8088"
-	origin := "http://118.25.40.163"
+	server := "ws://127.0.0.1:16886/v1/stream/sync"
+	// server := "ws://118.25.40.163:8088"
+	origin := "http://127.0.0.1"
+	// origin := "http://118.25.40.163"
 	client := NewWsClient(server, origin, true, printError, printError)
 	client.DebugOn = true
 	client.Start()

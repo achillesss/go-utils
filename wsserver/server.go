@@ -11,12 +11,10 @@ import (
 
 func (server *WsServer) initSocketsMap() {
 	server.sockets = gomap.NewMap(make(socketsMap))
-	go server.sockets.Handler()
 }
 
 func (server *WsServer) initRoomsMap() {
 	server.rooms = gomap.NewMap(make(roomsMap))
-	go server.rooms.Handler()
 }
 
 func (server *WsServer) initChannels() {
@@ -29,11 +27,11 @@ func (server *WsServer) onConnection(c *websocket.Conn) {
 	server.sockets.Add(s.id, s)
 	go s.send(server.sendErrorHandler)
 	s.receive(
-		func(msg []byte) {
+		func(socketID int, msg []byte) {
 			if server.ShouldAnswerPing && string(msg) == "ping" {
 				s.sendMsgChan <- []byte("pong")
 			}
-			server.receiveMsgHandler(msg)
+			server.receiveMsgHandler(socketID, msg)
 		},
 		server.receiveErrorHandler,
 	)
@@ -47,11 +45,20 @@ func NewWsServerFromConfig(config *wsServerConfig) *WsServer {
 	server.initSocketsMap()
 	server.initRoomsMap()
 	server.initChannels()
-	server.sendErrorHandler = config.sendErrorHandler
-	server.receiveErrorHandler = config.recvErrorHandler
-	server.receiveMsgHandler = config.recvMsgHandler
 	go server.chatMonitor()
 	return &server
+}
+
+func (server *WsServer) SetSendErrorHandler(f func(error)) {
+	server.sendErrorHandler = f
+}
+
+func (server *WsServer) SetReceiveErrorHandler(f func(error)) {
+	server.receiveErrorHandler = f
+}
+
+func (server *WsServer) SetReceiveMsgHandler(f func(int, []byte)) {
+	server.receiveMsgHandler = f
 }
 
 func (server WsServer) SetConnectionRouters(addr net.Addr, patterns ...string) {
