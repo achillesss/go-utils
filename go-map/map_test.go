@@ -43,6 +43,9 @@ func TestMapInt(t *testing.T) {
 	result := make(map[int]int)
 	m.BatchQuery([]int{11, 22}, &result)
 	fmt.Printf("result: %+v\n", result)
+
+	m.BatchAdd(map[int]int{33: 33, 44: 44})
+	fmt.Printf("map: %+v, length: %d\n", m.Interface(), m.Len())
 }
 
 func TestMapString(t *testing.T) {

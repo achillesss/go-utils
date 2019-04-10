@@ -49,6 +49,35 @@ func (m *GoMap) Add(key, value interface{}) {
 	}
 }
 
+func (m *GoMap) BatchAdd(srcMap interface{}) {
+	if !isMap(srcMap) {
+		return
+	}
+
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	mapType := reflect.TypeOf(srcMap)
+	keyType := mapType.Key()
+	valueType := mapType.Elem()
+
+	if keyType.Kind() != m.mapKeyType.Kind() {
+		return
+	}
+
+	if valueType.Kind() != m.mapValueType.Kind() {
+		return
+	}
+
+	mapValue := reflect.ValueOf(srcMap)
+	for _, key := range mapValue.MapKeys() {
+		value := mapValue.MapIndex(key)
+		if value.IsValid() {
+			m.mapValue.SetMapIndex(key, value)
+		}
+	}
+}
+
 func (m *GoMap) Delete(key interface{}) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
