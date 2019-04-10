@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/achillesss/go-utils/log"
+	"bitbucket.org/magmeng/go-utils/log"
 )
 
 func TestMapInt(t *testing.T) {
@@ -29,10 +29,7 @@ func TestMapInt(t *testing.T) {
 	fmt.Printf("map: %+v, length: %d\n", m.Interface(), m.Len())
 
 	m.Delete(1)
-	fmt.Printf("delete map: %+v, length: %d\n", m.Interface(), m.Len())
-
-	m.Delete(1)
-	fmt.Printf("delete again, map: %+v, length: %d\n", m.Interface(), m.Len())
+	fmt.Printf("map: %+v, length: %d\n", m.Interface(), m.Len())
 
 	m.Query(1, &q)
 	fmt.Printf("map: %+v, length: %d\n", m.Interface(), m.Len())
@@ -41,8 +38,11 @@ func TestMapInt(t *testing.T) {
 		return
 	}
 
-	m.Set(map[int]int{11: 11})
+	m.Set(map[int]int{11: 11, 22: 22})
 	fmt.Printf("map: %+v, length: %d\n", m.Interface(), m.Len())
+	result := make(map[int]int)
+	m.BatchQuery([]int{11, 22}, &result)
+	fmt.Printf("result: %+v\n", result)
 }
 
 func TestMapString(t *testing.T) {
@@ -95,8 +95,10 @@ func TestMapValueStruct(t *testing.T) {
 	a.d = []int{3, 4}
 
 	m := NewMap(srcMap)
-	m.Add(9, &a)
 	var q *A
+	m.Query(9, &q)
+	fmt.Printf("q: %+#v\n", q)
+	m.Add(9, &a)
 	m.Query(9, &q)
 	if q == nil || q.a != a.a || q.b != a.b && q.c != a.c || (len(q.d) != len(q.d)) || q.d[0] != q.d[0] || q.d[1] != q.d[1] {
 		t.Errorf("%s failed.", log.FuncName())

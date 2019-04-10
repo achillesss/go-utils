@@ -68,6 +68,52 @@ func (m *GoMap) Set(srcMap interface{}) {
 	m.mapValueType = m.mapType.Elem()
 }
 
+func (m *GoMap) BatchQuery(keys interface{}, dstMap interface{}) error {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	keysType := reflect.TypeOf(keys)
+	if keysType.Kind() != reflect.Slice {
+		return errors.New("keys should be slice")
+	}
+
+	keysValue := reflect.ValueOf(keys)
+	keysLength := keysValue.Len()
+	if keysLength < 1 {
+		return nil
+	}
+
+	oneKey := keysValue.Index(0)
+	oneKeyType := oneKey.Type()
+	if oneKeyType.Kind() != m.mapKeyType.Kind() {
+		return errors.New("invalid keys type")
+	}
+
+	dt := reflect.TypeOf(dstMap)
+	if dt.Kind() != reflect.Ptr {
+		return fmt.Errorf("dst not a pointer")
+	}
+
+	dv := reflect.ValueOf(dstMap)
+	if dv.Kind() != reflect.Ptr {
+		panic("dst not a pointer")
+	}
+
+	result := reflect.MakeMap(m.mapType)
+	for i := 0; i < keysLength; i++ {
+		kv := keysValue.Index(i)
+		value := reflect.Zero(m.mapValueType).Interface()
+		v := m.mapValue.MapIndex(kv)
+		if v.IsValid() {
+			value = v.Interface()
+		}
+
+		result.SetMapIndex(kv, reflect.ValueOf(value))
+	}
+
+	dv.Elem().Set(reflect.ValueOf(result.Interface()))
+	return nil
+}
+
 func (m *GoMap) Query(key interface{}, dst interface{}) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
