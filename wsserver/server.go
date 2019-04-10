@@ -1,11 +1,9 @@
 package wsserver
 
 import (
-	"fmt"
 	"net"
 
 	"github.com/achillesss/go-utils/go-map"
-	"github.com/achillesss/go-utils/log"
 	"golang.org/x/net/websocket"
 )
 
@@ -22,7 +20,6 @@ func (server *WsServer) initChannels() {
 }
 
 func (server *WsServer) onConnection(c *websocket.Conn) {
-	log.Infofln("new connection")
 	s := server.newSocket(c)
 	server.sockets.Add(s.id, s)
 	go s.send(server.sendErrorHandler)
@@ -40,11 +37,11 @@ func (server *WsServer) onConnection(c *websocket.Conn) {
 func NewWsServerFromConfig(config *wsServerConfig) *WsServer {
 	var server WsServer
 	server.lastConnID = new(int)
-	server.lastRoomID = new(int)
+	// server.lastRoomID = new(int)
 	server.handlers = config.handlers
 	server.initSocketsMap()
-	server.initRoomsMap()
-	server.initChannels()
+	// server.initRoomsMap()
+	// server.initChannels()
 	go server.chatMonitor()
 	return &server
 }
@@ -61,7 +58,7 @@ func (server *WsServer) SetReceiveMsgHandler(f func(int, []byte)) {
 	server.receiveMsgHandler = f
 }
 
-func (server WsServer) SetConnectionRouters(addr net.Addr, patterns ...string) {
+func (server *WsServer) SetConnectionRouters(addr net.Addr, patterns ...string) {
 	h := newWsHandler()
 	h.address = addr
 	for _, pattern := range patterns {
@@ -70,37 +67,24 @@ func (server WsServer) SetConnectionRouters(addr net.Addr, patterns ...string) {
 	h.serve()
 }
 
-func (server WsServer) Serve() {
+func (server *WsServer) Serve() {
 	for _, h := range server.handlers {
 		h.serve()
 	}
 }
 
-func (server WsServer) SendTo(msg []byte, socketID int) error {
-	s := server.querySocket(socketID)
-	if s == nil {
-		return fmt.Errorf("invalid socket")
-	}
-	if !*s.isConnecting {
-		return fmt.Errorf("closed socket")
-	}
-	s.sendMsgChan <- msg
-	return nil
-}
-
-func (server WsServer) BatchSend(msg []byte, ids ...int) {
-	smap := server.sockets.Interface().(socketsMap)
-	for _, id := range ids {
-		go func(id int) {
-			s := smap[id]
+func (server *WsServer) SendTo(msg []byte, ids ...int) {
+	sockets := server.querySockets(ids...)
+	for _, s := range sockets {
+		go func(s *socket) {
 			if s != nil && *s.isConnecting {
 				s.sendMsgChan <- msg
 			}
-		}(id)
+		}(s)
 	}
 }
 
-func (server WsServer) SendToAll(msg []byte) {
+func (server *WsServer) SendToAll(msg []byte) {
 	smap := server.sockets.Interface().(socketsMap)
 	for _, v := range smap {
 		go func(v *socket) {

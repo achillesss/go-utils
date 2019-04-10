@@ -39,7 +39,7 @@ func (h *wsHandler) registerRouter(pattern string, handler http.Handler) {
 	h.routers[pattern] = handler
 }
 
-func (h wsHandler) serve() {
+func (h *wsHandler) serve() {
 	l, err := net.Listen(h.address.Network(), h.address.String())
 	if err != nil {
 		panic(err)

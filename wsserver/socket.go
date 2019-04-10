@@ -1,7 +1,6 @@
 package wsserver
 
 import (
-	"github.com/achillesss/go-utils/log"
 	"golang.org/x/net/websocket"
 )
 
@@ -23,7 +22,6 @@ func (s *socket) stop() {
 }
 
 func (s *socket) receive(msgHandler func(int, []byte), errorHandler func(error)) {
-	log.Infofln("start receive")
 	msgChan := make(chan []byte)
 	go func() {
 		for {
@@ -45,7 +43,6 @@ func (s *socket) receive(msgHandler func(int, []byte), errorHandler func(error))
 	for {
 		select {
 		case <-s.stopSignal:
-			log.Infofln("receive stop signal")
 			return
 		case msg := <-msgChan:
 			if msgHandler != nil {
@@ -56,15 +53,12 @@ func (s *socket) receive(msgHandler func(int, []byte), errorHandler func(error))
 }
 
 func (s *socket) send(errHandler func(error)) {
-	log.Infofln("start send")
 	for {
 		select {
 		case <-s.stopSignal:
-			log.Infofln("receive stop signal")
 			return
 
 		case msg := <-s.sendMsgChan:
-			log.Infofln("send %s", msg)
 			err := websocket.Message.Send(s.conn, msg)
 			if err != nil {
 				if errHandler != nil {
@@ -88,13 +82,17 @@ func (server *WsServer) newSocket(conn *websocket.Conn) *socket {
 	return &s
 }
 
-func (server WsServer) querySocket(id int) *socket {
-	var s *socket
-	server.sockets.Query(id, &s)
-	return s
+func (server *WsServer) querySockets(ids ...int) []*socket {
+	var socks map[int]*socket
+	server.sockets.BatchQuery(ids, &socks)
+	var sockets []*socket
+	for _, v := range socks {
+		sockets = append(sockets, v)
+	}
+	return sockets
 }
 
-func (server WsServer) ListSockets() []int {
+func (server *WsServer) ListSockets() []int {
 	var ids []int
 	smap := server.sockets.Interface().(socketsMap)
 	for k := range smap {

@@ -49,22 +49,27 @@ func (server *WsServer) QueryRoomates(roomID int) []int {
 	return r.ListRoomates()
 }
 
-func (r *room) addRoomate(id int) {
-	r.roomates.Add(id, struct{}{})
+func (r *room) addRoomates(ids ...int) {
+	var roomates = map[int]struct{}{}
+	for _, id := range ids {
+		roomates[id] = struct{}{}
+	}
+	r.roomates.BatchAdd(roomates)
 }
 
-func (server *WsServer) AddRoomate(roomID, socketID int) error {
+func (server *WsServer) AddRoomates(roomID int, socketIDs ...int) error {
 	r := server.queryRoom(roomID)
 	if r == nil {
 		return fmt.Errorf("room not found")
 	}
 
-	s := server.querySocket(socketID)
-	if s == nil {
-		return fmt.Errorf("socket not found")
+	socks := server.querySockets(socketIDs...)
+	var ids []int
+	for _, s := range socks {
+		ids = append(ids, s.id)
 	}
 
-	r.addRoomate(socketID)
+	r.addRoomates(ids...)
 	return nil
 }
 
@@ -87,7 +92,7 @@ func (server WsServer) Broadcast(msg []byte, roomID int) error {
 		return fmt.Errorf("room not found")
 	}
 	ids := r.ListRoomates()
-	server.BatchSend(msg, ids...)
+	server.SendTo(msg, ids...)
 	return nil
 }
 
@@ -112,5 +117,4 @@ func (server *WsServer) NewRoom() {
 	r.msgReceiveChan = make(chan map[int][]byte)
 	r.roomates = gomap.NewMap(make(roomatesMap))
 	server.rooms.Add(r.id, &r)
-	log.Infofln("add new room %d", r.id)
 }
