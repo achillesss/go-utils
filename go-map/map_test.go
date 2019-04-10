@@ -10,7 +10,6 @@ import (
 func TestMapInt(t *testing.T) {
 	srcMap := make(map[int]int)
 	m := NewMap(srcMap)
-	go m.Handler()
 	var q int
 
 	fmt.Printf("map: %+v, length: %d\n", m.Interface(), m.Len())
@@ -44,13 +43,11 @@ func TestMapInt(t *testing.T) {
 
 	m.Set(map[int]int{11: 11})
 	fmt.Printf("map: %+v, length: %d\n", m.Interface(), m.Len())
-	m.Close()
 }
 
 func TestMapString(t *testing.T) {
 	var srcMap map[string]string
 	m := NewMap(srcMap)
-	go m.Handler()
 	var q string
 
 	fmt.Printf("map: %+v, length: %d\n", m.Interface(), m.Len())
@@ -80,7 +77,6 @@ func TestMapString(t *testing.T) {
 		t.Errorf("%s failed.", log.FuncName())
 		return
 	}
-	m.Close()
 
 }
 
@@ -99,7 +95,6 @@ func TestMapValueStruct(t *testing.T) {
 	a.d = []int{3, 4}
 
 	m := NewMap(srcMap)
-	go m.Handler()
 	m.Add(9, &a)
 	var q *A
 	m.Query(9, &q)
