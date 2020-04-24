@@ -189,6 +189,7 @@ func NewWsClient(addr string, options ...ClientOption) *WsClient {
 	client.writeChan = make(chan []byte)
 	client.connectingCompletedSignal = make(chan struct{}, 1)
 	client.server = addr
+	client.origin = addr
 	client.renewStopSignal()
 
 	for _, option := range options {
