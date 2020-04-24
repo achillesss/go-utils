@@ -2,99 +2,171 @@ package wsserver
 
 import (
 	"net"
+	"net/http"
 
-	"github.com/achillesss/go-utils/go-map"
+	"github.com/achillesss/go-utils/log"
 	"golang.org/x/net/websocket"
 )
 
-func (server *WsServer) initSocketsMap() {
-	server.sockets = gomap.NewMap(make(socketsMap))
-}
-
-func (server *WsServer) initRoomsMap() {
-	server.rooms = gomap.NewMap(make(roomsMap))
-}
-
-func (server *WsServer) initChannels() {
-	server.roomMsg = make(chan map[int][]byte, 1)
-}
-
 func (server *WsServer) onConnection(c *websocket.Conn) {
 	s := server.newSocket(c)
-	server.sockets.Add(s.id, s)
-	go s.send(server.sendErrorHandler)
+
+	go func() {
+		<-s.stopSignal
+
+		server.socketMsgChanLock.Lock()
+		delete(server.socketMsgChans, s.id)
+		server.socketMsgChanLock.Unlock()
+
+		close(s.sendMsgChan)
+
+		server.socketStopChanLock.Lock()
+		delete(server.socketStopChans, s.id)
+		server.socketStopChanLock.Unlock()
+
+	}()
+
+	go s.send(server.sendMsgHandler, server.sendErrorHandler)
 	s.receive(
-		func(socketID int, msg []byte) {
+		func(msg []byte) {
 			if server.ShouldAnswerPing && string(msg) == "ping" {
 				s.sendMsgChan <- []byte("pong")
 			}
-			server.receiveMsgHandler(socketID, msg)
+			server.receiveMsgHandler(msg)
 		},
 		server.receiveErrorHandler,
 	)
 }
 
-func NewWsServerFromConfig(config *wsServerConfig) *WsServer {
+func NewWsServer(addr, pattern string, options ...ServerOption) *WsServer {
 	var server WsServer
-	server.lastConnID = new(int)
-	// server.lastRoomID = new(int)
-	server.handlers = config.handlers
-	server.initSocketsMap()
+	server.routers = make(map[string]map[string]http.Handler)
+	server.socketMsgChans = make(map[int64]chan []byte)
+	server.socketStopChans = make(map[int64]chan struct{})
+	options = append(options, WithRouter(addr, pattern, ConvertWsHandlerFunctionToHttpHandler(server.onConnection)))
+	for _, option := range options {
+		option.updateOption(&server)
+	}
+
+	// 	server.rooms = gomap.NewMap(make(roomsMap))
+	// 	server.roomMsg = make(chan map[int64][]byte, 1)
+
 	// server.initRoomsMap()
 	// server.initChannels()
-	go server.chatMonitor()
+	// go server.chatMonitor()
 	return &server
 }
 
-func (server *WsServer) SetSendErrorHandler(f func(error)) {
-	server.sendErrorHandler = f
+func WithSendErrorHandler(f func(error)) ServerOption {
+	return newOptionHolder(func(ws *WsServer) {
+		ws.sendErrorHandler = f
+	})
 }
 
-func (server *WsServer) SetReceiveErrorHandler(f func(error)) {
-	server.receiveErrorHandler = f
+func WithRecvErrorHandler(f func(error)) ServerOption {
+	return newOptionHolder(func(ws *WsServer) {
+		ws.receiveErrorHandler = f
+	})
 }
 
-func (server *WsServer) SetReceiveMsgHandler(f func(int, []byte)) {
-	server.receiveMsgHandler = f
+func WithSendMsgHandler(f func([]byte)) ServerOption {
+	return newOptionHolder(func(ws *WsServer) {
+		ws.sendMsgHandler = f
+	})
 }
 
-func (server *WsServer) SetConnectionRouters(addr net.Addr, patterns ...string) {
-	h := newWsHandler()
-	h.address = addr
-	for _, pattern := range patterns {
-		h.registerRouter(pattern, ConvertWsHandlerFunctionToHttpHandler(server.onConnection))
-	}
-	h.serve()
+func WithRecvMsgHandler(f func([]byte)) ServerOption {
+	return newOptionHolder(func(ws *WsServer) {
+		ws.receiveMsgHandler = f
+	})
+}
+
+func WithRouter(addr, pattern string, handler http.Handler) ServerOption {
+	return newOptionHolder(func(ws *WsServer) {
+		var r = ws.routers[addr]
+		if r == nil {
+			r = make(map[string]http.Handler)
+			ws.routers[addr] = r
+		}
+		r[pattern] = handler
+	})
+}
+
+func WithAnswerPing() ServerOption {
+	return newOptionHolder(func(ws *WsServer) {
+		ws.ShouldAnswerPing = true
+	})
 }
 
 func (server *WsServer) Serve() {
-	for _, h := range server.handlers {
-		h.serve()
+	for addr, r := range server.routers {
+		l, err := net.Listen("tcp", addr)
+		if err != nil {
+			panic(err)
+		}
+
+		var mux = http.NewServeMux()
+		for pattern, handler := range r {
+			log.Infofln("new router: %s", pattern)
+			mux.Handle(pattern, handler)
+		}
+
+		go http.Serve(l, mux)
+		log.Infofln("serve above routers on %s", addr)
 	}
 }
 
-func (server *WsServer) SendTo(msg []byte, ids ...int) {
-	sockets := server.querySockets(ids...)
-	for _, s := range sockets {
-		go func(s *socket) {
-			if s != nil && *s.isConnecting {
-				s.sendMsgChan <- msg
+func (server *WsServer) SendMsgTo(msg []byte, ids ...int64) {
+	server.socketMsgChanLock.RLock()
+	defer server.socketMsgChanLock.RUnlock()
+
+	for _, id := range ids {
+		var ch, ok = server.socketMsgChans[id]
+		if !ok {
+			continue
+		}
+
+		go func(ch chan []byte) {
+			select {
+			case <-ch:
+			default:
+				ch <- msg
 			}
-		}(s)
+		}(ch)
 	}
 }
 
-func (server *WsServer) SendToAll(msg []byte) {
-	smap := server.sockets.Interface().(socketsMap)
-	for _, v := range smap {
-		go func(v *socket) {
-			if v != nil && *v.isConnecting {
-				v.sendMsgChan <- msg
+func (server *WsServer) Broadcast(msg []byte) {
+	server.socketMsgChanLock.RLock()
+	defer server.socketMsgChanLock.RUnlock()
+
+	for _, ch := range server.socketMsgChans {
+		go func(ch chan []byte) {
+			select {
+			case <-ch:
+			default:
+				ch <- msg
 			}
-		}(v)
+		}(ch)
 	}
 }
 
-func (server WsServer) SendRoomMsg(msg []byte, roomID int) {
-	server.roomMsg <- map[int][]byte{roomID: msg}
+// func (server *WsServer) SendRoomMsg(msg []byte, roomID int64) {
+// 	server.roomMsg <- map[int64][]byte{roomID: msg}
+// }
+
+func (server *WsServer) Stop(socketID int64) {
+	server.socketStopChanLock.RLock()
+	defer server.socketStopChanLock.RUnlock()
+
+	var ch, ok = server.socketStopChans[socketID]
+	if !ok {
+		return
+	}
+
+	select {
+	case <-ch:
+	default:
+		close(ch)
+	}
 }

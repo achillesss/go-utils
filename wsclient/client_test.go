@@ -10,22 +10,25 @@ import (
 var exitChan chan struct{}
 
 func printError(err error) {
-	fmt.Printf("error: %v\n", err)
+	// fmt.Printf("error: %v\n", err)
 }
 
 func TestClient(t *testing.T) {
 	flag.Parse()
-	server := "ws://127.0.0.1:16886/v1/stream/sync"
-	// server := "ws://118.25.40.163:8088"
-	origin := "http://127.0.0.1"
-	// origin := "http://118.25.40.163"
-	client := NewWsClient(server, origin, true, printError, printError)
+	server := "ws://121.40.165.18:8800"
+	origin := "http://121.40.165.18:8800"
+	client := NewWsClient(server, origin, nil, true, printError, printError)
+	var n int
+	SetOnReconnectingFunction(func(n *int) {
+		*n++
+		fmt.Printf("n: %d\n", *n)
+	}, &n)
+
 	client.DebugOn = true
 	client.Start()
 	go func() {
 		for {
-			msg := client.Receive()
-			fmt.Printf("receive %s", msg)
+			client.Receive()
 		}
 	}()
 	time.Sleep(time.Second * 5)

@@ -1,6 +1,9 @@
 package wsclient
 
 import (
+	"net/http"
+	"time"
+
 	"github.com/achillesss/go-utils/functionCaller"
 	"github.com/achillesss/go-utils/log"
 	"golang.org/x/net/websocket"
@@ -22,15 +25,18 @@ func (client *WsClient) renewStopSignal() {
 
 // Connect establish a new websocket connection
 // panic if any error occurs
-func (client *WsClient) connect() {
-	client.debugLog("start to connect")
+func (client *WsClient) connect() error {
+	client.debugLog("start to connetct")
 	config, err := websocket.NewConfig(client.server, client.origin)
 	if err != nil {
 		panic(err)
 	}
+
+	config.Header = client.header
+
 	conn, err := websocket.DialConfig(config)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	if client.conn != nil {
@@ -40,6 +46,8 @@ func (client *WsClient) connect() {
 	client.conn = conn
 	client.isRunning = true
 	client.debugLog("connected")
+
+	return nil
 }
 
 // Close close the connection in WsClient
@@ -53,7 +61,12 @@ func (client *WsClient) Close() bool {
 
 func (client *WsClient) stop() {
 	client.debugLog("stop")
-	close(*client.stopSignal)
+	select {
+	case <-*client.stopSignal:
+	default:
+		close(*client.stopSignal)
+	}
+
 	client.stopGroup.Wait()
 	client.isRunning = false
 	client.debugLog("stopped")
@@ -68,15 +81,13 @@ func (client *WsClient) read() {
 	client.debugLog("start read")
 	client.stopGroup.Add(1)
 	defer client.stopGroup.Done()
-	msgChan := make(chan string)
+	msgChan := make(chan []byte)
 	go func() {
 		for {
-			var message string
+			var message []byte
 			err := websocket.Message.Receive(client.conn, &message)
-			if err != nil {
-				if client.readErrorHandler != nil {
-					client.readErrorHandler(err)
-				}
+			if err != nil && client.readErrorHandler != nil {
+				client.readErrorHandler(err)
 				client.stop()
 				return
 			}
@@ -87,11 +98,12 @@ func (client *WsClient) read() {
 	for {
 		select {
 		case <-*client.stopSignal:
-			client.debugLog("read routine stop")
+			client.debugLog("stop read")
 			return
+
 		case msg := <-msgChan:
 			client.debugLog("reveice msg: %s", msg)
-			client.readChan <- []byte(msg)
+			client.readChan <- msg
 		}
 	}
 }
@@ -103,16 +115,14 @@ func (client *WsClient) write() {
 	for {
 		select {
 		case <-*client.stopSignal:
-			client.debugLog("write routine stop")
+			client.debugLog("stop write")
 			return
 
 		case msg := <-client.writeChan:
 			client.debugLog("write msg: %s", msg)
-			err := websocket.Message.Send(client.conn, string(msg))
-			if err != nil {
-				if client.writeErrorHandler != nil {
-					client.writeErrorHandler(err)
-				}
+			err := websocket.Message.Send(client.conn, msg)
+			if err != nil && client.writeErrorHandler != nil {
+				client.writeErrorHandler(err)
 				client.stop()
 			}
 		}
@@ -144,7 +154,15 @@ func (client *WsClient) runMonitor() {
 				if client.isRunning {
 					continue
 				}
-				client.connect()
+
+				var err = client.connect()
+				if err != nil {
+					log.Errorfln("Connect Failed: %v", err)
+					time.Sleep(time.Second)
+					go client.start()
+					continue
+				}
+
 				if client.connectingCount > 0 {
 					client.connectingCompletedSignal <- struct{}{}
 				}
@@ -164,11 +182,11 @@ func SetOnReconnectingFunction(function interface{}, params ...interface{}) {
 
 func (client *WsClient) onReconnecting() {
 	for range client.connectingCompletedSignal {
-		onConnectingCaller.Call(false)
+		onConnectingCaller.Call(false, nil)
 	}
 }
 
-func NewWsClient(server, origin string, mustReconnect bool, recvMsgErrHandler, sendMsgErrHandler func(error)) *WsClient {
+func NewWsClient(server, origin string, header http.Header, mustReconnect bool, recvMsgErrHandler, sendMsgErrHandler func(error)) *WsClient {
 	var client WsClient
 	client.startSignal = make(chan struct{})
 	client.shutdownSignal = make(chan struct{})
@@ -178,6 +196,7 @@ func NewWsClient(server, origin string, mustReconnect bool, recvMsgErrHandler, s
 	client.connectingCompletedSignal = make(chan struct{}, 1)
 	client.server = server
 	client.origin = origin
+	client.header = header
 	client.readErrorHandler = recvMsgErrHandler
 	client.writeErrorHandler = sendMsgErrHandler
 	client.mustReconnect = mustReconnect

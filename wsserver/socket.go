@@ -1,101 +1,123 @@
 package wsserver
 
 import (
+	"sync/atomic"
+
 	"golang.org/x/net/websocket"
 )
 
-type socketsMap map[int]*socket
+type socketsMap map[int64]*socket
 
 type socket struct {
-	id           int
-	conn         *websocket.Conn
-	sendMsgChan  chan []byte
-	stopSignal   chan struct{}
-	isConnecting *bool
+	id          int64
+	conn        *websocket.Conn
+	sendMsgChan chan []byte
+	stopSignal  chan struct{}
 }
 
-func (s *socket) stop() {
-	if *s.isConnecting {
-		*s.isConnecting = false
-		close(s.stopSignal)
+func (s *socket) try(f func()) {
+	select {
+	case <-s.stopSignal:
+	default:
+		f()
 	}
 }
 
-func (s *socket) receive(msgHandler func(int, []byte), errorHandler func(error)) {
-	msgChan := make(chan []byte)
-	go func() {
-		for {
-			var msg []byte
-			err := websocket.Message.Receive(s.conn, &msg)
-			switch err {
-			case nil:
-				msgChan <- msg
-			default:
-				if errorHandler != nil {
-					errorHandler(err)
-				}
-				s.stop()
-				return
-			}
-		}
-	}()
-
+func (s *socket) tryLoop(f func()) {
 	for {
 		select {
 		case <-s.stopSignal:
 			return
-		case msg := <-msgChan:
-			if msgHandler != nil {
-				msgHandler(s.id, msg)
-			}
+
+		default:
+			f()
 		}
 	}
 }
 
-func (s *socket) send(errHandler func(error)) {
+func (s *socket) stop() {
+	s.try(func() {
+		close(s.stopSignal)
+	})
+}
+
+func (s *socket) receive(msgHandler MsgHandler, errHandler ErrHandler) {
+	go func() {
+		for {
+			var msg []byte
+			var err = websocket.Message.Receive(s.conn, &msg)
+			if err != nil {
+				if errHandler != nil {
+					go errHandler(err)
+				}
+				s.stop()
+				return
+			}
+
+			if msgHandler != nil {
+				go msgHandler(msg)
+			}
+		}
+	}()
+
+	select {
+	case <-s.stopSignal:
+	}
+}
+
+func (s *socket) sendMsg(msg []byte, msgHandler MsgHandler, errHandler ErrHandler) {
+	if msgHandler != nil {
+		go msgHandler(msg)
+	}
+
+	var err = websocket.Message.Send(s.conn, msg)
+	if err == nil {
+		return
+	}
+
+	if errHandler != nil {
+		go errHandler(err)
+	}
+
+	s.stop()
+}
+
+func (s *socket) send(msgHandler MsgHandler, errHandler ErrHandler) {
 	for {
 		select {
 		case <-s.stopSignal:
 			return
 
 		case msg := <-s.sendMsgChan:
-			err := websocket.Message.Send(s.conn, msg)
-			if err != nil {
-				if errHandler != nil {
-					errHandler(err)
-				}
-				s.stop()
-			}
+			go s.sendMsg(msg, msgHandler, errHandler)
 		}
 	}
 }
 
 func (server *WsServer) newSocket(conn *websocket.Conn) *socket {
 	var s socket
-	*server.lastConnID++
-	s.id = *server.lastConnID
-	s.isConnecting = new(bool)
-	*s.isConnecting = true
+	s.id = atomic.AddInt64(&server.lastConnID, 1)
 	s.conn = conn
 	s.sendMsgChan = make(chan []byte)
 	s.stopSignal = make(chan struct{})
+
+	server.socketMsgChanLock.Lock()
+	defer server.socketMsgChanLock.Unlock()
+	server.socketMsgChans[s.id] = s.sendMsgChan
+
+	server.socketStopChanLock.Lock()
+	defer server.socketStopChanLock.Unlock()
+	server.socketStopChans[s.id] = s.stopSignal
+
 	return &s
 }
 
-func (server *WsServer) querySockets(ids ...int) []*socket {
-	var socks map[int]*socket
-	server.sockets.BatchQuery(ids, &socks)
-	var sockets []*socket
-	for _, v := range socks {
-		sockets = append(sockets, v)
-	}
-	return sockets
-}
+func (server *WsServer) ListSocketIDs() []int64 {
+	server.socketMsgChanLock.RLock()
+	defer server.socketMsgChanLock.RUnlock()
 
-func (server *WsServer) ListSockets() []int {
-	var ids []int
-	smap := server.sockets.Interface().(socketsMap)
-	for k := range smap {
+	var ids []int64
+	for k := range server.socketMsgChans {
 		ids = append(ids, k)
 	}
 	return ids

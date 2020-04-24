@@ -1,6 +1,7 @@
 package wsclient
 
 import (
+	"net/http"
 	"sync"
 
 	"golang.org/x/net/websocket"
@@ -9,6 +10,7 @@ import (
 type WsClient struct {
 	server                    string
 	origin                    string
+	header                    http.Header
 	conn                      *websocket.Conn
 	shutdownSignal            chan struct{}
 	startSignal               chan struct{}
