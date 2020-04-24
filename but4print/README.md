@@ -7,4 +7,4 @@
 - 同行刷新打印
 
 
-see [but_test.go](https://github.com/achillesss/go-utils/but4print/blob/master/but_test.go)
+see [but_test.go](https://github.com/achillesss/go-utils/blob/master/but4print/but_test.go)
