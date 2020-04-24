@@ -1,10 +1,8 @@
 package wsclient
 
 import (
-	"net/http"
 	"time"
 
-	"github.com/achillesss/go-utils/functionCaller"
 	"github.com/achillesss/go-utils/log"
 	"golang.org/x/net/websocket"
 )
@@ -14,6 +12,7 @@ func (client *WsClient) debugLog(format string, args ...interface{}) {
 		log.Infofln(format, args...)
 	}
 }
+
 func (client *WsClient) renewStopSignal() {
 	sc := make(chan struct{})
 	if client.stopSignal == nil {
@@ -66,7 +65,6 @@ func (client *WsClient) stop() {
 	default:
 		close(*client.stopSignal)
 	}
-
 	client.stopGroup.Wait()
 	client.isRunning = false
 	client.debugLog("stopped")
@@ -98,9 +96,8 @@ func (client *WsClient) read() {
 	for {
 		select {
 		case <-*client.stopSignal:
-			client.debugLog("stop read")
+			client.debugLog("read routine stop")
 			return
-
 		case msg := <-msgChan:
 			client.debugLog("reveice msg: %s", msg)
 			client.readChan <- msg
@@ -115,7 +112,7 @@ func (client *WsClient) write() {
 	for {
 		select {
 		case <-*client.stopSignal:
-			client.debugLog("stop write")
+			client.debugLog("write routine stop")
 			return
 
 		case msg := <-client.writeChan:
@@ -174,19 +171,16 @@ func (client *WsClient) runMonitor() {
 	}()
 }
 
-var onConnectingCaller *funcaller.FunctionCaller
-
-func SetOnReconnectingFunction(function interface{}, params ...interface{}) {
-	onConnectingCaller = funcaller.NewCaller(function, params...)
-}
-
 func (client *WsClient) onReconnecting() {
 	for range client.connectingCompletedSignal {
-		onConnectingCaller.Call(false, nil)
+		if client.onReconnectingFunc == nil {
+			continue
+		}
+		client.onReconnectingFunc()
 	}
 }
 
-func NewWsClient(server, origin string, header http.Header, mustReconnect bool, recvMsgErrHandler, sendMsgErrHandler func(error)) *WsClient {
+func NewWsClient(addr string, options ...ClientOption) *WsClient {
 	var client WsClient
 	client.startSignal = make(chan struct{})
 	client.shutdownSignal = make(chan struct{})
@@ -194,13 +188,12 @@ func NewWsClient(server, origin string, header http.Header, mustReconnect bool, 
 	client.readChan = make(chan []byte)
 	client.writeChan = make(chan []byte)
 	client.connectingCompletedSignal = make(chan struct{}, 1)
-	client.server = server
-	client.origin = origin
-	client.header = header
-	client.readErrorHandler = recvMsgErrHandler
-	client.writeErrorHandler = sendMsgErrHandler
-	client.mustReconnect = mustReconnect
+	client.server = addr
 	client.renewStopSignal()
+
+	for _, option := range options {
+		option.updateOption(&client)
+	}
 
 	return &client
 }

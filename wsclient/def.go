@@ -26,4 +26,5 @@ type WsClient struct {
 	writeErrorHandler         func(error)
 	DebugOn                   bool
 	connectingCount           int
+	onReconnectingFunc        func()
 }

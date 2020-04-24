@@ -9,7 +9,16 @@ var header = make(map[string]string)
 var reconnectIfDisconnected = true
 var handleRecvMsgErrFunc = func(err error){ print(err) }
 var handleSendMsgErrFunc = func(err error){ print(err) }
-var client = NewWsClient(wsAddr, origin, header, reconnectIfDisconnected, handleRecvMsgErrFunc, handleSendMsgErrFunc)
+var client = NewWsClient(
+    wsAddr, // ws server address
+    WithOrigin(origin), // if connect with origin
+    WithHeader(header), // if connect with header
+    WithReconnect(reconnectIfDisconnected), // if want to reconnect when socket disconnected
+    WithRecvErrorHandler(handleRecvMsgErrFunc), // to handle error on receiving msg
+    WithSendErrorHandler(handleSendMsgErrFunc), // to handle error on sending msg
+    WithDebug(true), // turn on debug logs
+    WithReconnectingFunc(func(){ print("reconnected!") }), // run function on reconnecting
+)
 
 // if you want to do something on reconnecting:
 client.SetOnReconnectingFunction(f func(params ...), params ...)
