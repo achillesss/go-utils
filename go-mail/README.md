@@ -1,4 +1,5 @@
 # go-mail
+邮件工具
 
 ## 怎么发
 
@@ -13,5 +14,9 @@ to1 := []string{
     "zz@zz.com",
 }
 
-NewSender().Login("sender@sender.com","sender_pwd","smtp.sender.com","smtp.sender.com:587").Send(subject0,message0,to0...).Send(subject1,message1,to1...).Done()
+NewSender().
+    Login("sender@sender.com","sender_pwd","smtp.sender.com","smtp.sender.com:587").
+    Send(subject0,message0,to0...).
+    Send(subject1,message1,to1...).
+    Done()
 ```

@@ -8,7 +8,7 @@ import (
 	"golang.org/x/net/websocket"
 )
 
-func (server *WsServer) onConnection(c *websocket.Conn) {
+func (server *WsServer) OnConnectionHandler(c *websocket.Conn) {
 	s := server.newSocket(c)
 
 	go func() {
@@ -43,7 +43,7 @@ func NewWsServer(addr, pattern string, options ...ServerOption) *WsServer {
 	server.routers = make(map[string]map[string]http.Handler)
 	server.socketMsgChans = make(map[int64]chan []byte)
 	server.socketStopChans = make(map[int64]chan struct{})
-	options = append(options, WithRouter(addr, pattern, ConvertWsHandlerFunctionToHttpHandler(server.onConnection)))
+	options = append(options, WithRouter(addr, pattern, ConvertWsHandlerFunctionToHttpHandler(server.OnConnectionHandler)))
 	for _, option := range options {
 		option.updateOption(&server)
 	}

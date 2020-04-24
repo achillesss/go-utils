@@ -32,6 +32,6 @@ func TestClient(t *testing.T) {
 		}
 	}()
 	time.Sleep(time.Second * 5)
-	client.stop()
+	client.Close()
 	time.Sleep(time.Second * 5)
 }

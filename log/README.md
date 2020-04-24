@@ -30,7 +30,7 @@ So I try to develop a tool to log messages in a way I want.
 #### Example[1]:
 
         1  package main
-        2  import "github.com/achillesss/log"
+        2  import "github.com/achillesss/go-utils/log"
         3  func print(){
         4    log.Parse()
         5    log.Infof("My name is %s.", "Alex") // simply an information
@@ -75,7 +75,7 @@ if you turn on it, your all logs will turn into the form as below:
 
 #### Example[2]:
         1  package main
-        2  import "github.com/achillesss/log"
+        2  import "github.com/achillesss/go-utils/log"
         3  type response struct {}
         4  func (r *response) String() (res string) {
         5     // marshal r into res
@@ -123,9 +123,3 @@ Time flies. I'll fill up this field later.
     Add README.md
 * #### 2.1.0
     Add flag '-time' to turn on a time.Now().UTC() tag formatted as "_2006-01-02T03:04:05_" 
-
----
-
-*   My [LinkedIn](https://www.linkedin.com/in/cigeralex/)
-*   My wechat: neverexistsnever
-*   My QQ: 310276663
