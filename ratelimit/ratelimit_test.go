@@ -11,6 +11,7 @@ func TestRatelimit(t *testing.T) {
 	rules.AddRule("get", time.Second, 6, 0)
 	rules.AddRule("get", time.Millisecond*500, 4, 0)
 	rules.AddRule("get", time.Millisecond*100, 1, 0)
+	rules.SetRateLimitTypeName(0, "user")
 
 	var slice = make([]string, 1000)
 	for i := range slice {

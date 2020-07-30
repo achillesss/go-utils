@@ -12,6 +12,18 @@ import (
 
 type durationCount map[time.Duration]int64
 
+type RateLimitType int
+
+var rateLimitTypeName = make(map[RateLimitType]string)
+
+func registerRateLimitTypeName(typ int, name string) {
+	rateLimitTypeName[RateLimitType(typ)] = name
+}
+
+func (t RateLimitType) String() string {
+	return rateLimitTypeName[t]
+}
+
 type rate struct {
 	l sync.RWMutex
 	m durationCount
@@ -75,37 +87,39 @@ func (t *tries) count(id string, duration time.Duration) {
 	t.l.Unlock()
 }
 
-type failCount struct {
-	name     string
-	max      int64
-	tries    int64
-	duration time.Duration
-	typ      int
+type CountInfo struct {
+	ID       string
+	Name     string
+	Max      int64
+	Tries    int64
+	Duration time.Duration
+	Typ      RateLimitType
 }
 
-func (f *failCount) Error() string {
-	return fmt.Sprintf("Restrict by %s-%d-%s, max %d, tries %d", f.name, f.typ, f.duration, f.max, f.tries)
+func (f *CountInfo) String() string {
+	return fmt.Sprintf("ID[%s]METHOD[%s]TYP[%s]CNT[%d/%d]IN[%s]", f.ID, f.Name, f.Typ, f.Tries, f.Max, f.Duration)
 }
 
 type rule struct {
 	name      string
-	typ       int
+	typ       RateLimitType
 	max       rate
 	tries     tries
 	durations []time.Duration
 }
 
-func (r *rule) count(id string) error {
+func (r *rule) count(id string) *CountInfo {
 	for _, duration := range r.durations {
 		var max = r.max.getCount(duration)
 		var try = r.tries.getCount(id, duration)
 		if try >= max {
-			return &failCount{
-				name:     r.name,
-				max:      max,
-				tries:    try,
-				duration: duration,
-				typ:      r.typ,
+			return &CountInfo{
+				ID:       id,
+				Name:     r.name,
+				Max:      max,
+				Tries:    try,
+				Duration: duration,
+				Typ:      r.typ,
 			}
 		}
 	}
@@ -143,7 +157,7 @@ func (r *Rules) AddRule(name string, duration time.Duration, max int64, typ int)
 	if !ok {
 		rl = new(rule)
 		rl.name = name
-		rl.typ = typ
+		rl.typ = RateLimitType(typ)
 		rl.max.m = make(durationCount)
 		rl.tries.cnt = make(map[string]durationCount)
 	}
@@ -161,7 +175,7 @@ func (r *Rules) AddRule(name string, duration time.Duration, max int64, typ int)
 	r.l.Unlock()
 }
 
-func (r *Rules) Call(id string, name string, typ int) error {
+func (r *Rules) Call(id string, name string, typ int) *CountInfo {
 	var ruleID = nameTypeID(name, typ)
 	r.l.RLock()
 	var rl, ok = r.rules[ruleID]
@@ -171,4 +185,8 @@ func (r *Rules) Call(id string, name string, typ int) error {
 	}
 
 	return rl.count(id)
+}
+
+func (r *Rules) SetRateLimitTypeName(typ int, name string) {
+	registerRateLimitTypeName(typ, name)
 }
