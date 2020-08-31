@@ -108,7 +108,7 @@ type rule struct {
 	durations []time.Duration
 }
 
-func (r *rule) count(id string) *CountInfo {
+func (r *rule) count(id string) (*CountInfo, bool) {
 	for _, duration := range r.durations {
 		var max = r.max.getCount(duration)
 		var try = r.tries.getCount(id, duration)
@@ -120,7 +120,7 @@ func (r *rule) count(id string) *CountInfo {
 				Tries:    try,
 				Duration: duration,
 				Typ:      r.typ,
-			}
+			}, false
 		}
 	}
 
@@ -175,7 +175,7 @@ func (r *Rules) AddRule(name string, duration time.Duration, max int64, typ int)
 	r.l.Unlock()
 }
 
-func (r *Rules) Call(id string, name string, typ int) *CountInfo {
+func (r *Rules) Call(id string, name string, typ int) (*CountInfo, bool) {
 	var ruleID = nameTypeID(name, typ)
 	r.l.RLock()
 	var rl, ok = r.rules[ruleID]
