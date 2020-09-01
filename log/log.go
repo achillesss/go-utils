@@ -71,6 +71,10 @@ func funcName(skip int, on bool) string {
 	return newLogAgent().setSkip(skip + 1).setSymble(on).funcName()
 }
 
+func callerLine(skip int, on bool) string {
+	return newLogAgent().setSkip(skip + 1).setSymble(on).callerLine()
+}
+
 // FuncName returns name of the function which calls it
 func FuncName() string {
 	return funcName(1, false)
@@ -128,6 +132,11 @@ func Lln(ok bool, format string, arg ...interface{}) {
 	print_(ok, 1, logLog, newline, format, arg...)
 }
 
+// Lln differs from L in that it create a newline after loging with a skip
+func LlnN(ok bool, skip int, format string, arg ...interface{}) {
+	print_(ok, 1+skip, logLog, newline, format, arg...)
+}
+
 // Infof prints information inline
 func Infof(format string, arg ...interface{}) {
 	print_(*infoOn, 1, "", "", format, arg...)
@@ -183,4 +192,8 @@ func FormatWarningfln(fmt string, args ...interface{}) string {
 
 func FormatErrorfln(fmt string, args ...interface{}) string {
 	return format(1, logError, newline, fmt, args...)
+}
+
+func CallerLine(skip int) string {
+	return callerLine(skip+1, false)
 }

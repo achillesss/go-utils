@@ -61,13 +61,22 @@ func (a *logAgent) funcName() string {
 
 }
 
+func (a *logAgent) callerLine() string {
+	if _, file, line, ok := runtime.Caller(a.skip + 1); ok {
+		fileName := strings.Split(file, slash)
+		return strings.Join([]string{fileName[len(fileName)-1], strconv.Itoa(line)}, "_")
+	}
+
+	return "unkown"
+}
+
 func (a *logAgent) String(format string, arg ...interface{}) string {
 	if _, file, line, ok := runtime.Caller(a.skip + 1); ok {
 		fileName := strings.Split(file, slash)
 		timeTag := ""
 
 		if *timeOn {
-			timeTag = " " + time.Now().UTC().Format(time.RFC3339)[:19]
+			timeTag = " " + time.Now().UTC().Format(time.StampMilli)
 		}
 
 		arg = append([]interface{}{a.printType, fileName[len(fileName)-1], line, timeTag}, arg...)
