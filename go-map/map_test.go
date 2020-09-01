@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"bitbucket.org/magmeng/go-utils/log"
+	"github.com/achillesss/go-utils/log"
 )
 
 func TestMapInt(t *testing.T) {

@@ -1,6 +1,6 @@
 module github.com/achillesss/go-utils
 
-go 1.12
+go 1.15
 
 require (
 	github.com/achillesss/but4print v0.0.0-20180226021820-f9ee273443ca // indirect
