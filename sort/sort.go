@@ -1,5 +1,10 @@
 package gosort
 
+import "reflect"
+
+// Sorter
+// 实现排序需要的三个方法
+// 在其他排序方法中被调用
 type Sorter interface {
 	Len() int
 	Swap(i, j int)
@@ -26,4 +31,11 @@ func (s int64Sorter) Less(i, j int) bool { return s[i] < s[j] }
 func SortInt64(src []int64, f func(Sorter)) {
 	var s = int64Sorter(src)
 	f(s)
+}
+
+func SortSlice(slice interface{}, less func(i, j int) bool, sortFunc ...func(Sorter)) {
+	var typ = reflect.TypeOf(slice)
+	if typ.Kind() != reflect.Slice {
+		return
+	}
 }

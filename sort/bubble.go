@@ -1,8 +1,8 @@
 package gosort
 
 // Bubble Sort 冒泡排序
-func bubbleSort(s Sorter) {
-	var l = s.Len()
+func bubbleSort(len func() int, less func(int, int) bool, swap func(int, int)) {
+	var l = len()
 
 	// 每次循环
 	// 都对无序数组[0:len-cnt]
@@ -12,14 +12,18 @@ func bubbleSort(s Sorter) {
 	// loopCnt 为循环次数，也指确定了多少个最大的数
 	var sortFunc = func(loopCnt int) {
 		for i := 0; i < l-loopCnt-1; i++ {
-			if s.Less(i, i+1) {
+			if less(i, i+1) {
 				continue
 			}
-			s.Swap(i, i+1)
+			swap(i, i+1)
 		}
 	}
 
 	for i := 0; i < l; i++ {
 		sortFunc(i)
 	}
+}
+
+func BubbleSort(s Sorter) {
+	bubbleSort(s.Len, s.Less, s.Swap)
 }

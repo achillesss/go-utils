@@ -1,8 +1,8 @@
 package gosort
 
 // Selection Sort 选择排序
-func selectionSort(s Sorter) {
-	var l = s.Len()
+func selectionSort(len func() int, less func(int, int) bool, swap func(int, int)) {
+	var l = len()
 
 	// 遍历未排序的部分
 	// 找出最小值
@@ -11,14 +11,18 @@ func selectionSort(s Sorter) {
 	var sortFunc = func(firstIndex int) {
 		var min = firstIndex
 		for i := firstIndex + 1; i < l; i++ {
-			if s.Less(i, min) {
+			if less(i, min) {
 				min = i
 			}
 		}
-		s.Swap(min, firstIndex)
+		swap(min, firstIndex)
 	}
 
 	for i := 0; i < l; i++ {
 		sortFunc(i)
 	}
+}
+
+func SelectionSort(s Sorter) {
+	selectionSort(s.Len, s.Less, s.Swap)
 }

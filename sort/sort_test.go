@@ -6,9 +6,9 @@ import (
 
 func TestSelectionSort(t *testing.T) {
 	var sortMethods = []func(Sorter){
-		selectionSort,
-		insertionSort,
-		bubbleSort,
+		SelectionSort,
+		InsertionSort,
+		BubbleSort,
 	}
 
 	for i, method := range sortMethods {
