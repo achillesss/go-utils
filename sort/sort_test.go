@@ -1,4 +1,5 @@
 package gosort
+
 import (
 	"fmt"
 	"testing"
@@ -9,11 +10,13 @@ func TestSelectionSort(t *testing.T) {
 		SelectionSort,
 		InsertionSort,
 		BubbleSort,
+		ShellSort,
+		MergeSortRecursive,
 	}
 
 	for i, method := range sortMethods {
 		fmt.Printf("method: %d\n", i)
-		var src = []float64{4, 3, 2, 1, 200, 300, 100}
+		var src = []float64{4, 7, 11, 1, 200, 300, 100}
 		fmt.Printf("before: %+v\n", src)
 		SortFloat64(src, method)
 		fmt.Printf("after: %+v\n", src)

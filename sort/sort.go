@@ -1,6 +1,9 @@
 package gosort
 
-import "reflect"
+import (
+	"fmt"
+	"reflect"
+)
 
 // Sorter
 // 实现排序需要的三个方法
