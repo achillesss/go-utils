@@ -3,6 +3,7 @@ package gosort
 import (
 	"flag"
 )
+
 var MergeSortVersion = flag.Int(
 	"mergeVersion",
 	1,

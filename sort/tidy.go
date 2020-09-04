@@ -37,3 +37,10 @@ func tidy(sortedIndex []int, swap func(int, int)) {
 	}
 
 }
+
+func reverse(len func() int, swap func(int, int)) {
+	var l = len()
+	for i := 0; i <= l/2-1; i++ {
+		swap(i, l-i-1)
+	}
+}

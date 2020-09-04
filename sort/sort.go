@@ -2,7 +2,6 @@ package gosort
 
 import (
 	"fmt"
-	"reflect"
 )
 
 // Sorter
@@ -14,16 +13,40 @@ type Sorter interface {
 	Less(i, j int) bool
 }
 
-type DebugSorter interface {
+type Heaper interface {
+	Pop() interface{}
+	Push(interface{})
+}
+
+type HeapSorter interface {
+	Heaper
 	Sorter
+}
+
+type Debuger interface {
 	Index(...int) string
+}
+
+type DebugSorter interface {
+	Debuger
+	Sorter
+}
+
+type DebugHeapSorter interface {
+	Debuger
+	Heaper
+	Sorter
 }
 
 // sort float64
 type float64Sorter []float64
+
+// Sorter 接口
 func (s float64Sorter) Len() int           { return len(s) }
 func (s float64Sorter) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 func (s float64Sorter) Less(i, j int) bool { return s[i] < s[j] }
+
+// Debuger 接口
 func (s float64Sorter) Index(index ...int) string {
 	var temp = make(float64Sorter, len(index))
 	for i, j := range index {
@@ -32,6 +55,20 @@ func (s float64Sorter) Index(index ...int) string {
 	return fmt.Sprintf("%+#v", temp)
 }
 
+// Heaper 接口
+func (s *float64Sorter) Pop() interface{} {
+	var old = *s
+	var l = old.Len()
+	var p = old[l-1]
+	*s = old[:l-1]
+	return p
+}
+
+func (s *float64Sorter) Push(p interface{}) {
+	*s = append(*s, p.(float64))
+}
+
+// 外部 Sort 方法
 func SortFloat64(src []float64, f func(Sorter)) {
 	var s = float64Sorter(src)
 	f(s)
@@ -39,6 +76,7 @@ func SortFloat64(src []float64, f func(Sorter)) {
 
 // sort int64
 type int64Sorter []int64
+
 func (s int64Sorter) Len() int           { return len(s) }
 func (s int64Sorter) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 func (s int64Sorter) Less(i, j int) bool { return s[i] < s[j] }
@@ -46,11 +84,4 @@ func (s int64Sorter) Less(i, j int) bool { return s[i] < s[j] }
 func SortInt64(src []int64, f func(Sorter)) {
 	var s = int64Sorter(src)
 	f(s)
-}
-
-func SortSlice(slice interface{}, less func(i, j int) bool, sortFunc ...func(Sorter)) {
-	var typ = reflect.TypeOf(slice)
-	if typ.Kind() != reflect.Slice {
-		return
-	}
 }
