@@ -1,6 +1,7 @@
 package gosort
 
 import (
+	"fmt"
 	"reflect"
 )
 
@@ -13,11 +14,23 @@ type Sorter interface {
 	Less(i, j int) bool
 }
 
+type DebugSorter interface {
+	Sorter
+	Index(...int) string
+}
+
 // sort float64
 type float64Sorter []float64
 func (s float64Sorter) Len() int           { return len(s) }
 func (s float64Sorter) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 func (s float64Sorter) Less(i, j int) bool { return s[i] < s[j] }
+func (s float64Sorter) Index(index ...int) string {
+	var temp = make(float64Sorter, len(index))
+	for i, j := range index {
+		temp[i] = s[j]
+	}
+	return fmt.Sprintf("%+#v", temp)
+}
 
 func SortFloat64(src []float64, f func(Sorter)) {
 	var s = float64Sorter(src)

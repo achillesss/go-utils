@@ -11,7 +11,7 @@ func tidy(sortedIndex []int, swap func(int, int)) {
 	var indexRealPlace = make(map[int]int, l)
 
 	// 初始化
-	for i := range indexRealPlace {
+	for i := range sortedIndex {
 		indexRealPlace[i] = i
 	}
 

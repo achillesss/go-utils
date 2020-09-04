@@ -12,6 +12,7 @@ func TestSelectionSort(t *testing.T) {
 		BubbleSort,
 		ShellSort,
 		MergeSort,
+		QuickSort,
 	}
 
 	for i, method := range sortMethods {
