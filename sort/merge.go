@@ -24,15 +24,9 @@ func mergeSort(len func() int, less func(int, int) bool, swap func(int, int)) {
 	// 原始数组的 index
 	var src = make([]int, l)
 
-	// 老的 index 会被 swap 若干次
-	// 所以需要一个变量来记住每一个老的 index 与哪一个 index 交换了位置
-	// 初始情况下，老的index对应的位置就是它本身
-	var indexRealPlace = make(map[int]int, l)
-
 	// 初始化
 	for i := range src {
 		src[i] = i
-		indexRealPlace[i] = i
 	}
 
 	// 对原始数组的 index 排序
@@ -48,28 +42,8 @@ func mergeSort(len func() int, less func(int, int) bool, swap func(int, int)) {
 		sortedIndexArr = mergeSortRecursiveTemp(src, less)
 	}
 
-	// 根据已经排序完的 index 列表
-	// 使用原数组的 swap 方法对原数组排序
-	for i, srcIndex := range sortedIndexArr {
-		// 老的 index 对应的实际 index
-		var srcIndexRealPlace = indexRealPlace[srcIndex]
-
-		// 上面的 index
-		// 要与此 index 交换位置
-		var realIndex = i
-
-		// 交换
-		swap(srcIndexRealPlace, realIndex)
-
-		// 交换位置之后
-		// 要更新交换记录
-		// 1. 老的 index 所在位置被更新成 realIndex
-		// 2. 与老 index 交换位置的 realIndex 被老 index 实际上对应的 index 替换，即
-		// 被 srcIndexRealPlace 替换
-		// 原本 srcIndex: srcIndexRealPlace, realIndex: realIndex
-		// 交换之后 srcIndex: realIndex, realIndex: srcIndexRealPlace
-		indexRealPlace[srcIndex], indexRealPlace[realIndex] = realIndex, srcIndexRealPlace
-	}
+	// 根据已排序的 index 整理原始数组
+	tidy(sortedIndexArr, swap)
 }
 
 // 归并排序之后
