@@ -11,7 +11,7 @@ func TestSelectionSort(t *testing.T) {
 		InsertionSort,
 		BubbleSort,
 		ShellSort,
-		MergeSortRecursive,
+		MergeSort,
 	}
 
 	for i, method := range sortMethods {

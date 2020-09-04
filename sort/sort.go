@@ -1,7 +1,6 @@
 package gosort
 
 import (
-	"fmt"
 	"reflect"
 )
 
