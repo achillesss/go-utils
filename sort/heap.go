@@ -1,6 +1,7 @@
 package gosort
 
 func HeapSort(s Sorter) {
+	registerDebugIndexFunc(s)
 	heapSort(s.Len, s.Less, s.Swap)
 }
 
@@ -90,6 +91,11 @@ func heapSort(
 	swap func(int, int),
 ) {
 	var l = len()
+	var originIndex = make([]int, l)
+	for i := range originIndex {
+		originIndex[i] = i
+	}
+
 	// 创建二叉堆
 	var binaryHeap = createBinaryHeap(l, less)
 

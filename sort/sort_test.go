@@ -1,8 +1,11 @@
 package gosort
 
 import (
-	"fmt"
+	"math/rand"
 	"testing"
+	"time"
+
+	"github.com/achillesss/go-utils/log"
 )
 
 func TestSelectionSort(t *testing.T) {
@@ -11,16 +14,24 @@ func TestSelectionSort(t *testing.T) {
 		InsertionSort,
 		BubbleSort,
 		ShellSort,
+
 		MergeSort,
 		QuickSort,
 		HeapSort,
 	}
 
+	var sliceLength = 20
+	rand.Seed(time.Now().UnixNano())
+	var randomSlice = make([]float64, sliceLength)
+	for i := range randomSlice {
+		randomSlice[i] = float64(rand.Int63n(1000))
+	}
+	log.Infofln("RandomSlice: %+v", randomSlice)
+
 	for i, method := range sortMethods {
-		fmt.Printf("method: %d\n", i)
-		var src = []float64{4, 7, 11, 1, 200, 300, 100}
-		fmt.Printf("before: %+v\n", src)
+		var src = make([]float64, sliceLength)
+		copy(src, randomSlice)
 		SortFloat64(src, method)
-		fmt.Printf("after: %+v\n", src)
+		log.Infofln("medhod[%d]: %+v", i, src)
 	}
 }

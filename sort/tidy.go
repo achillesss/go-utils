@@ -2,40 +2,46 @@ package gosort
 
 // 根据已经排序完的 index 列表
 // 使用原数组的 swap 方法对原数组排序
-func tidy(sortedIndex []int, swap func(int, int)) {
-	var l = len(sortedIndex)
+func tidy(sortedIndexArr []int, swap func(int, int)) {
+	var l = len(sortedIndexArr)
 
-	// 老的 index 会被 swap 若干次
-	// 所以需要一个变量来记住每一个老的 index 与哪一个 index 交换了位置
-	// 初始情况下，老的index对应的位置就是它本身
-	var indexRealPlace = make(map[int]int, l)
+	// 记录每一个原始数组的 index 当前对应真实的原始数组 index
+	var srcIndexMap = make(map[int]int, l)
+
+	// 记录被交换之后的原始 index 顺序
+	var swappedIndexMap = make(map[int]int, l)
 
 	// 初始化
-	for i := range sortedIndex {
-		indexRealPlace[i] = i
+	// 原始数字没有调用 swap 方法
+	// 所以原始数组的 index 所在的位置即 index 本身
+	for i := range sortedIndexArr {
+		srcIndexMap[i] = i
+		swappedIndexMap[i] = i
 	}
 
-	for i, srcIndex := range sortedIndex {
-		// 老的 index 对应的实际 index
-		var srcIndexRealPlace = indexRealPlace[srcIndex]
+	// swappedPlace: 被交换到已排好序的数组的何处
+	// srcIndex: 原始数组的 index
+	for swappedPlace, srcIndex := range sortedIndexArr {
+		// 找到原始数组 index 所在的真实 index 位置
+		var srcIndexPlace = srcIndexMap[srcIndex]
+		var realSrcIndex = swappedIndexMap[swappedPlace]
 
-		// 上面的 index
-		// 要与此 index 交换位置
-		var realIndex = i
+		if srcIndexPlace == swappedPlace {
+			continue
+		}
 
-		// 交换
-		swap(srcIndexRealPlace, realIndex)
+		swap(srcIndexPlace, swappedPlace)
 
 		// 交换位置之后
 		// 要更新交换记录
-		// 1. 老的 index 所在位置被更新成 realIndex
-		// 2. 与老 index 交换位置的 realIndex 被老 index 实际上对应的 index 替换，即
-		// 被 srcIndexRealPlace 替换
-		// 原本 srcIndex: srcIndexRealPlace, realIndex: realIndex
-		// 交换之后 srcIndex: realIndex, realIndex: srcIndexRealPlace
-		indexRealPlace[srcIndex], indexRealPlace[realIndex] = realIndex, srcIndexRealPlace
-	}
+		// 更新原数组 index 所在位置
+		srcIndexMap[srcIndex] = swappedPlace
+		srcIndexMap[realSrcIndex] = srcIndexPlace
 
+		// 更新排序数组中 index 对应的原数组 index
+		swappedIndexMap[swappedPlace] = srcIndex
+		swappedIndexMap[srcIndexPlace] = realSrcIndex
+	}
 }
 
 func reverse(len func() int, swap func(int, int)) {
