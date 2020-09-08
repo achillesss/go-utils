@@ -1,6 +1,12 @@
-package gosort
+package quick
 
-func QuickSort(s Sorter) {
+import (
+	"sort"
+
+	"github.com/achillesss/go-utils/arithmetic/sort/tidy"
+)
+
+func Sort(s sort.Interface) {
 	quickSort(s.Len, s.Less, s.Swap)
 }
 
@@ -23,7 +29,7 @@ func quickSort(len func() int, less func(int, int) bool, swap func(int, int)) {
 	var sortedIndexArr = quickSortTemp(src, less)
 
 	// 根据已排序的 index 整理原始数组
-	tidy(sortedIndexArr, swap)
+	tidy.Tidy(sortedIndexArr, swap)
 }
 
 func quickSortTemp(src []int, less func(int, int) bool) []int {

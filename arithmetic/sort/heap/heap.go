@@ -1,7 +1,12 @@
-package gosort
+package heap
 
-func HeapSort(s Sorter) {
-	registerDebugIndexFunc(s)
+import (
+	"sort"
+
+	"github.com/achillesss/go-utils/arithmetic/sort/tidy"
+)
+
+func Sort(s sort.Interface) {
 	heapSort(s.Len, s.Less, s.Swap)
 }
 
@@ -104,6 +109,6 @@ func heapSort(
 		sinkDown(0, binaryHeap[:l-i-1], less)
 	}
 
-	tidy(binaryHeap, swap)
-	reverse(len, swap)
+	tidy.Tidy(binaryHeap, swap)
+	tidy.Reverse(len, swap)
 }

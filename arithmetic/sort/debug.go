@@ -1,7 +1,9 @@
 package gosort
 
+import "sort"
+
 var indexDebug func(...int) string
 
-func registerDebugIndexFunc(s Sorter) {
+func registerDebugIndexFunc(s sort.Interface) {
 	indexDebug = s.(DebugSorter).Index
 }

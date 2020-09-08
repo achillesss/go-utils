@@ -1,4 +1,10 @@
-package gosort
+package shell
+
+import "sort"
+
+func Sort(s sort.Interface) {
+	shellSort(s.Len, s.Less, s.Swap)
+}
 
 func shellSort(len func() int, less func(int, int) bool, swap func(int, int)) {
 	var l = len()
@@ -18,8 +24,4 @@ func shellSort(len func() int, less func(int, int) bool, swap func(int, int)) {
 			sortFunc(i, gap)
 		}
 	}
-}
-
-func ShellSort(s Sorter) {
-	shellSort(s.Len, s.Less, s.Swap)
 }

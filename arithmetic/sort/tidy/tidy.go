@@ -1,8 +1,8 @@
-package gosort
+package tidy
 
 // 根据已经排序完的 index 列表
 // 使用原数组的 swap 方法对原数组排序
-func tidy(sortedIndexArr []int, swap func(int, int)) {
+func Tidy(sortedIndexArr []int, swap func(int, int)) {
 	var l = len(sortedIndexArr)
 
 	// 记录每一个原始数组的 index 当前对应真实的原始数组 index
@@ -44,7 +44,7 @@ func tidy(sortedIndexArr []int, swap func(int, int)) {
 	}
 }
 
-func reverse(len func() int, swap func(int, int)) {
+func Reverse(len func() int, swap func(int, int)) {
 	var l = len()
 	for i := 0; i <= l/2-1; i++ {
 		swap(i, l-i-1)

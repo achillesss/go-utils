@@ -1,4 +1,10 @@
-package gosort
+package selection
+
+import "sort"
+
+func Sort(s sort.Interface) {
+	selectionSort(s.Len, s.Less, s.Swap)
+}
 
 // Selection Sort 选择排序
 func selectionSort(len func() int, less func(int, int) bool, swap func(int, int)) {
@@ -21,8 +27,4 @@ func selectionSort(len func() int, less func(int, int) bool, swap func(int, int)
 	for i := 0; i < l; i++ {
 		sortFunc(i)
 	}
-}
-
-func SelectionSort(s Sorter) {
-	selectionSort(s.Len, s.Less, s.Swap)
 }

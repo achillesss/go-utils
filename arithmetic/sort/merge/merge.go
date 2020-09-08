@@ -1,7 +1,10 @@
-package gosort
+package merge
 
 import (
 	"flag"
+	"sort"
+
+	"github.com/achillesss/go-utils/arithmetic/sort/tidy"
 )
 
 var MergeSortVersion = flag.Int(
@@ -12,7 +15,7 @@ var MergeSortVersion = flag.Int(
 2. 迭代版`,
 )
 
-func MergeSort(s Sorter) {
+func Sort(s sort.Interface) {
 	mergeSort(s.Len, s.Less, s.Swap)
 }
 
@@ -44,7 +47,7 @@ func mergeSort(len func() int, less func(int, int) bool, swap func(int, int)) {
 	}
 
 	// 根据已排序的 index 整理原始数组
-	tidy(sortedIndexArr, swap)
+	tidy.Tidy(sortedIndexArr, swap)
 }
 
 // 归并排序之后

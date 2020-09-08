@@ -1,4 +1,10 @@
-package gosort
+package bubble
+
+import "sort"
+
+func Sort(s sort.Interface) {
+	bubbleSort(s.Len, s.Less, s.Swap)
+}
 
 // Bubble Sort 冒泡排序
 func bubbleSort(len func() int, less func(int, int) bool, swap func(int, int)) {
@@ -22,8 +28,4 @@ func bubbleSort(len func() int, less func(int, int) bool, swap func(int, int)) {
 	for i := 0; i < l; i++ {
 		sortFunc(i)
 	}
-}
-
-func BubbleSort(s Sorter) {
-	bubbleSort(s.Len, s.Less, s.Swap)
 }

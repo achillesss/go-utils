@@ -1,4 +1,12 @@
-package gosort
+package insertion
+
+import (
+	"sort"
+)
+
+func Sort(s sort.Interface) {
+	insertionSort(s.Len, s.Less, s.Swap)
+}
 
 // Insertion Sort 插入排序
 func insertionSort(len func() int, less func(int, int) bool, swap func(int, int)) {
@@ -19,8 +27,4 @@ func insertionSort(len func() int, less func(int, int) bool, swap func(int, int)
 	for i := 1; i < l; i++ {
 		sortFunc(i)
 	}
-}
-
-func InsertionSort(s Sorter) {
-	insertionSort(s.Len, s.Less, s.Swap)
 }
